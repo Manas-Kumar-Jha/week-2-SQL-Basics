@@ -1,0 +1,771 @@
+Enter password: ***************
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 28
+Server version: 8.0.41 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2025, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| 23eskit096         |
+| college            |
+| dsml_internship    |
+| grrass_sql         |
+| information_schema |
+| manas              |
+| mysql              |
+| performance_schema |
+| practice1          |
+| superstore_db      |
+| sys                |
++--------------------+
+11 rows in set (0.03 sec)
+
+mysql> CREATE DATABASE shopease_db;
+Query OK, 1 row affected (0.03 sec)
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| 23eskit096         |
+| college            |
+| dsml_internship    |
+| grrass_sql         |
+| information_schema |
+| manas              |
+| mysql              |
+| performance_schema |
+| practice1          |
+| shopease_db        |
+| superstore_db      |
+| sys                |
++--------------------+
+12 rows in set (0.00 sec)
+
+mysql> USE shopease_db;
+Database changed
+
+## Creating Table and its index
+
+mysql> CREATE TABLE customers (customer_id INT PRIMARY KEY, first_name VARCHAR(50) NOT NULL,last_name VARCHAR(50) NOT NULL,email VARCHAR(100) UNIQUE NOT NULL,city VARCHAR(50) NOT NULL,state VARCHAR(50) NOT NULL,join_date DATE NOT NULL, is_premium BOOLEAN DEFAULT FALSE);
+Query OK, 0 rows affected (0.05 sec)
+
+mysql> CREATE INDEX idx_customers_city ON customers(city);
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> CREATE INDEX idx_customers_state ON customers(state);
+Query OK, 0 rows affected (0.02 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> CREATE TABLE products (product_id INT PRIMARY KEY,product_name VARCHAR(100) NOT NULL,category VARCHAR(50) NOT NULL, brand VARCHAR(50) NOT NULL,unit_price DECIMAL(10,2) NOT NULL,stock_qty INT NOT NULL DEFAULT 0,CHECK(unit_price > 0),CHECK(stock_qty >= 0));
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> CREATE INDEX idx_products_category ON products(category);
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> CREATE TABLE orders (order_id INT PRIMARY KEY,customer_id INT NOT NULL,order_date DATE NOT NULL,status VARCHAR(20) NOT NULL DEFAULT 'Pending',total_amount DECIMAL(12,2) NOT NULL,CHECK (status IN ('Pending','Shipped','Delivered','Cancelled')),CHECK (total_amount >= 0),FOREIGN KEY (customer_id) REFERENCES customers(customer_id));
+Query OK, 0 rows affected (0.04 sec)
+
+mysql> CREATE INDEX idx_orders_date ON orders(order_date);
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> CREATE INDEX idx_orders_status ON orders(status);
+Query OK, 0 rows affected (0.02 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> CREATE TABLE order_items (item_id INT PRIMARY KEY,order_id INT NOT NULL,product_id INT NOT NULL,quantity INT NOT NULL,unit_price DECIMAL(10,2) NOT NULL,discount_pct DECIMAL(5,2) DEFAULT 0,CHECK(quantity > 0),CHECK(unit_price > 0),CHECK(discount_pct BETWEEN 0 AND 100),FOREIGN KEY(order_id) REFERENCES orders(order_id),FOREIGN KEY(product_id) REFERENCES products(product_id));
+Query OK, 0 rows affected (0.04 sec)
+
+mysql> SHOW TABLES;
++-----------------------+
+| Tables_in_shopease_db |
++-----------------------+
+| customers             |
+| order_items           |
+| orders                |
+| products              |
++-----------------------+
+4 rows in set (0.01 sec)
+
+SHOW CREATE TABLE TableName; It is used to display the complete SQL statement that was used to create the table, including all constraints, keys, indexes, and foreign key relationships.
+
+mysql> SHOW CREATE TABLE orders;
++--------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Table  | Create Table                                                                                                                                                |
++--------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| orders | CREATE TABLE `orders` (
+  `order_id` int NOT NULL,
+  `customer_id` int NOT NULL,
+  `order_date` date NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'Pending',
+  `total_amount` decimal(12,2) NOT NULL,
+  PRIMARY KEY (`order_id`),
+  KEY `customer_id` (`customer_id`),
+  KEY `idx_orders_date` (`order_date`),
+  KEY `idx_orders_status` (`status`),
+  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`),
+  CONSTRAINT `orders_chk_1` CHECK ((`status` in (_utf8mb4'Pending',_utf8mb4'Shipped',_utf8mb4'Delivered',_utf8mb4'Cancelled'))),
+  CONSTRAINT `orders_chk_2` CHECK ((`total_amount` >= 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
++--------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql> SHOW CREATE TABLE order_items;
++-------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Table       | Create Table                                   |
++-------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| order_items | CREATE TABLE `order_items` (
+  `item_id` int NOT NULL,
+  `order_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `quantity` int NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `discount_pct` decimal(5,2) DEFAULT '0.00',
+  PRIMARY KEY (`item_id`),
+  KEY `order_id` (`order_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
+  CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`),
+  CONSTRAINT `order_items_chk_1` CHECK ((`quantity` > 0)),
+  CONSTRAINT `order_items_chk_2` CHECK ((`unit_price` > 0)),
+  CONSTRAINT `order_items_chk_3` CHECK ((`discount_pct` between 0 and 100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
++-------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+##Insering values in to each table
+
+mysql> INSERT INTO customers VALUES (101,'Aarav','Sharma','aarav.s@email.com','Mumbai','Maharashtra','2024-01-15',TRUE),(102,'Priya','Patel','priya.p@email.com','Ahmedabad','Gujarat','2024-02-20',FALSE),(103,'Rohan','Gupta','rohan.g@email.com','Delhi','Delhi','2024-03-10',TRUE),(104,'Sneha','Reddy','sneha.r@email.com','Hyderabad','Telangana','2024-04-05',FALSE),(105,'Vikram','Singh','vikram.s@email.com','Jaipur','Rajasthan','2024-05-12',TRUE),(106,'Ananya','Iyer','ananya.i@email.com','Chennai','Tamil Nadu','2024-06-18',FALSE),(107,'Karan','Mehta','karan.m@email.com','Pune','Maharashtra','2024-07-22',TRUE),(108,'Divya','Nair','divya.n@email.com','Kochi','Kerala','2024-08-30',FALSE);
+Query OK, 8 rows affected (0.01 sec)
+Records: 8  Duplicates: 0  Warnings: 0
+
+mysql> SELECT * FROM customers;
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+| customer_id | first_name | last_name | email              | city      | state       | join_date  | is_premium |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |
+|         102 | Priya      | Patel     | priya.p@email.com  | Ahmedabad | Gujarat     | 2024-02-20 |          0 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |
+|         104 | Sneha      | Reddy     | sneha.r@email.com  | Hyderabad | Telangana   | 2024-04-05 |          0 |
+|         105 | Vikram     | Singh     | vikram.s@email.com | Jaipur    | Rajasthan   | 2024-05-12 |          1 |
+|         106 | Ananya     | Iyer      | ananya.i@email.com | Chennai   | Tamil Nadu  | 2024-06-18 |          0 |
+|         107 | Karan      | Mehta     | karan.m@email.com  | Pune      | Maharashtra | 2024-07-22 |          1 |
+|         108 | Divya      | Nair      | divya.n@email.com  | Kochi     | Kerala      | 2024-08-30 |          0 |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+8 rows in set (0.00 sec)
+
+mysql> INSERT INTO products VALUES (201,'Wireless Earbuds','Electronics','BoAt',1499.00,250),(202,'Cotton T-Shirt','Clothing','Levis',799.00,500),(203,'Smart Watch','Electronics','Noise',2999.00,150),(204,'Running Shoes','Clothing','Nike',4599.00,120),(205,'Bluetooth Speaker','Electronics','JBL',3499.00,200),(206,'Bedsheet Set','Home','Spaces',1299.00,300),(207,'Laptop Stand','Electronics','AmazonBasics',899.00,180),(208,'Cushion Covers (Set)','Home','HomeCenter',599.00,400);
+Query OK, 8 rows affected (0.01 sec)
+Records: 8  Duplicates: 0  Warnings: 0
+
+mysql> SELECT * FROM products;
++------------+----------------------+-------------+--------------+------------+-----------+
+| product_id | product_name         | category    | brand        | unit_price | stock_qty |
++------------+----------------------+-------------+--------------+------------+-----------+
+|        201 | Wireless Earbuds     | Electronics | BoAt         |    1499.00 |       250 |
+|        202 | Cotton T-Shirt       | Clothing    | Levis        |     799.00 |       500 |
+|        203 | Smart Watch          | Electronics | Noise        |    2999.00 |       150 |
+|        204 | Running Shoes        | Clothing    | Nike         |    4599.00 |       120 |
+|        205 | Bluetooth Speaker    | Electronics | JBL          |    3499.00 |       200 |
+|        206 | Bedsheet Set         | Home        | Spaces       |    1299.00 |       300 |
+|        207 | Laptop Stand         | Electronics | AmazonBasics |     899.00 |       180 |
+|        208 | Cushion Covers (Set) | Home        | HomeCenter   |     599.00 |       400 |
++------------+----------------------+-------------+--------------+------------+-----------+
+8 rows in set (0.00 sec)
+
+mysql> INSERT INTO orders VALUES (1001,101,'2024-08-01','Delivered',4498.00),(1002,102,'2024-08-03','Delivered',799.00),(1003,103,'2024-08-05','Shipped',7498.00),(1004,101,'2024-08-10','Delivered',3499.00),(1005,104,'2024-08-12','Cancelled',2999.00),(1006,105,'2024-08-15','Delivered',5898.00),(1007,106,'2024-08-18','Pending',1299.00),(1008,103,'2024-08-20','Delivered',899.00),(1009,107,'2024-08-25','Shipped',6098.00),(1010,108,'2024-08-28','Delivered',1598.00);
+Query OK, 10 rows affected (0.01 sec)
+Records: 10  Duplicates: 0  Warnings: 0
+
+mysql> SELECT * FROM orders;
++----------+-------------+------------+-----------+--------------+
+| order_id | customer_id | order_date | status    | total_amount |
++----------+-------------+------------+-----------+--------------+
+|     1001 |         101 | 2024-08-01 | Delivered |      4498.00 |
+|     1002 |         102 | 2024-08-03 | Delivered |       799.00 |
+|     1003 |         103 | 2024-08-05 | Shipped   |      7498.00 |
+|     1004 |         101 | 2024-08-10 | Delivered |      3499.00 |
+|     1005 |         104 | 2024-08-12 | Cancelled |      2999.00 |
+|     1006 |         105 | 2024-08-15 | Delivered |      5898.00 |
+|     1007 |         106 | 2024-08-18 | Pending   |      1299.00 |
+|     1008 |         103 | 2024-08-20 | Delivered |       899.00 |
+|     1009 |         107 | 2024-08-25 | Shipped   |      6098.00 |
+|     1010 |         108 | 2024-08-28 | Delivered |      1598.00 |
++----------+-------------+------------+-----------+--------------+
+10 rows in set (0.00 sec)
+
+mysql> INSERT INTO order_items VALUES (5001,1001,201,2,1499.00,0),(5002,1001,207,1,899.00,10),(5003,1002,202,1,799.00,0),(5004,1003,203,1,2999.00,0),(5005,1003,204,1,4599.00,5),(5006,1004,205,1,3499.00,0),(5007,1005,203,1,2999.00,0),(5008,1006,201,1,1499.00,10),(5009,1006,204,1,4599.00,5),(5010,1007,206,1,1299.00,0),(5011,1008,207,1,899.00,0),(5012,1009,205,1,3499.00,0),(5013,1009,208,2,599.00,15),(5014,1010,206,1,1299.00,0),(5015,1010,208,1,599.00,0);
+Query OK, 15 rows affected (0.01 sec)
+Records: 15  Duplicates: 0  Warnings: 0
+
+mysql> SELECT * FROM order_items;
++---------+----------+------------+----------+------------+--------------+
+| item_id | order_id | product_id | quantity | unit_price | discount_pct |
++---------+----------+------------+----------+------------+--------------+
+|    5001 |     1001 |        201 |        2 |    1499.00 |         0.00 |
+|    5002 |     1001 |        207 |        1 |     899.00 |        10.00 |
+|    5003 |     1002 |        202 |        1 |     799.00 |         0.00 |
+|    5004 |     1003 |        203 |        1 |    2999.00 |         0.00 |
+|    5005 |     1003 |        204 |        1 |    4599.00 |         5.00 |
+|    5006 |     1004 |        205 |        1 |    3499.00 |         0.00 |
+|    5007 |     1005 |        203 |        1 |    2999.00 |         0.00 |
+|    5008 |     1006 |        201 |        1 |    1499.00 |        10.00 |
+|    5009 |     1006 |        204 |        1 |    4599.00 |         5.00 |
+|    5010 |     1007 |        206 |        1 |    1299.00 |         0.00 |
+|    5011 |     1008 |        207 |        1 |     899.00 |         0.00 |
+|    5012 |     1009 |        205 |        1 |    3499.00 |         0.00 |
+|    5013 |     1009 |        208 |        2 |     599.00 |        15.00 |
+|    5014 |     1010 |        206 |        1 |    1299.00 |         0.00 |
+|    5015 |     1010 |        208 |        1 |     599.00 |         0.00 |
++---------+----------+------------+----------+------------+--------------+
+15 rows in set (0.00 sec)
+
+##Counting Total number of entries in each table for verification purpose
+
+mysql> SELECT COUNT(*) FROM customers;
++----------+
+| COUNT(*) |
++----------+
+|        8 |
++----------+
+1 row in set (0.01 sec)
+
+mysql> SELECT COUNT(*) FROM products;
++----------+
+| COUNT(*) |
++----------+
+|        8 |
++----------+
+1 row in set (0.00 sec)
+
+mysql> SELECT COUNT(*) FROM orders;
++----------+
+| COUNT(*) |
++----------+
+|       10 |
++----------+
+1 row in set (0.00 sec)
+
+mysql> SELECT COUNT(*) FROM order_items;
++----------+
+| COUNT(*) |
++----------+
+|       15 |
++----------+
+1 row in set (0.00 sec)
+
+Section A — SQL Basics (SELECT, Constraints, Primary Keys) 
+These questions test your understanding of basic data retrieval, table structure, and database constraints. 
+
+Q1. Write a query to display all columns and rows from the customer's table.
+
+mysql> SELECT * FROM customers;
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+| customer_id | first_name | last_name | email              | city      | state       | join_date  | is_premium |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |
+|         102 | Priya      | Patel     | priya.p@email.com  | Ahmedabad | Gujarat     | 2024-02-20 |          0 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |
+|         104 | Sneha      | Reddy     | sneha.r@email.com  | Hyderabad | Telangana   | 2024-04-05 |          0 |
+|         105 | Vikram     | Singh     | vikram.s@email.com | Jaipur    | Rajasthan   | 2024-05-12 |          1 |
+|         106 | Ananya     | Iyer      | ananya.i@email.com | Chennai   | Tamil Nadu  | 2024-06-18 |          0 |
+|         107 | Karan      | Mehta     | karan.m@email.com  | Pune      | Maharashtra | 2024-07-22 |          1 |
+|         108 | Divya      | Nair      | divya.n@email.com  | Kochi     | Kerala      | 2024-08-30 |          0 |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+8 rows in set (0.00 sec)
+
+Q2. Retrieve only the first_name, last_name, and city of all customers.
+
+mysql> SELECT first_name, last_name, city FROM customers;
++------------+-----------+-----------+
+| first_name | last_name | city      |
++------------+-----------+-----------+
+| Aarav      | Sharma    | Mumbai    |
+| Priya      | Patel     | Ahmedabad |
+| Rohan      | Gupta     | Delhi     |
+| Sneha      | Reddy     | Hyderabad |
+| Vikram     | Singh     | Jaipur    |
+| Ananya     | Iyer      | Chennai   |
+| Karan      | Mehta     | Pune      |
+| Divya      | Nair      | Kochi     |
++------------+-----------+-----------+
+8 rows in set (0.00 sec)
+
+Q3. List all unique categories available in the products table.
+
+mysql> SELECT DISTINCT category FROM products;
++-------------+
+| category    |
++-------------+
+| Clothing    |
+| Electronics |
+| Home        |
++-------------+
+3 rows in set (0.00 sec)
+
+Q4. Identify the Primary Key of each table in the schema. Explain why a Primary Key must be unique and NOT
+NULL.
+
+mysql> SELECT TABLE_NAME,COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = 'shopease_db' AND CONSTRAINT_NAME = 'PRIMARY';
++-------------+-------------+
+| TABLE_NAME  | COLUMN_NAME |
++-------------+-------------+
+| customers   | customer_id |
+| order_items | item_id     |
+| orders      | order_id    |
+| products    | product_id  |
++-------------+-------------+
+4 rows in set (0.01 sec)
+
+mysql> SHOW CREATE TABLE customers;
++-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Table     | Create Table                                                                                                                                         |
++-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| customers | CREATE TABLE `customers` (
+  `customer_id` int NOT NULL,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `city` varchar(50) NOT NULL,
+  `state` varchar(50) NOT NULL,
+  `join_date` date NOT NULL,
+  `is_premium` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`customer_id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_customers_city` (`city`),
+  KEY `idx_customers_state` (`state`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
++-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+Q5. What constraints are applied to the email column in the customers table? What would happen if you tried
+to insert a duplicate email?
+
+mysql> INSERT INTO customers VALUES (109,'Test','User','aarav.s@email.com','Mumbai','Maharashtra','2024-09-01',TRUE);
+ERROR 1062 (23000): Duplicate entry 'aarav.s@email.com' for key 'customers.email'
+
+Q6. Try inserting a product with unit_price = -50. What happens and which constraint prevents it? Write both
+the INSERT statement and explain the error.
+
+mysql> INSERT INTO products VALUES (209,'Faulty Product','Electronics','ABC',-50,100);
+ERROR 3819 (HY000): Check constraint 'products_chk_1' is violated.
+mysql>
+mysql>
+mysql> -- Result Fails due to CHECK(unit_price > 0)
+
+Section B — Filtering & Optimization (WHERE, Indexes) 
+These questions test your ability to filter data effectively and understand how indexes improve query 
+performance. 
+
+Q7. Retrieve all orders with status = 'Delivered'.
+
+mysql> SELECT * FROM orders WHERE status='Delivered';
++----------+-------------+------------+-----------+--------------+
+| order_id | customer_id | order_date | status    | total_amount |
++----------+-------------+------------+-----------+--------------+
+|     1001 |         101 | 2024-08-01 | Delivered |      4498.00 |
+|     1002 |         102 | 2024-08-03 | Delivered |       799.00 |
+|     1004 |         101 | 2024-08-10 | Delivered |      3499.00 |
+|     1006 |         105 | 2024-08-15 | Delivered |      5898.00 |
+|     1008 |         103 | 2024-08-20 | Delivered |       899.00 |
+|     1010 |         108 | 2024-08-28 | Delivered |      1598.00 |
++----------+-------------+------------+-----------+--------------+
+6 rows in set (0.00 sec)
+
+Q8. Find all products in the 'Electronics' category with a unit_price greater than ₹2000.
+
+mysql> SELECT * FROM products WHERE category='Electronics' AND unit_price > 2000;
++------------+-------------------+-------------+-------+------------+-----------+
+| product_id | product_name      | category    | brand | unit_price | stock_qty |
++------------+-------------------+-------------+-------+------------+-----------+
+|        203 | Smart Watch       | Electronics | Noise |    2999.00 |       150 |
+|        205 | Bluetooth Speaker | Electronics | JBL   |    3499.00 |       200 |
++------------+-------------------+-------------+-------+------------+-----------+
+2 rows in set (0.00 sec)
+
+Q9. List all customers who joined in the year 2024 and belong to the state 'Maharashtra'.
+
+mysql> SELECT * FROM customers WHERE state='Maharashtra' AND YEAR(join_date)=2024;
++-------------+------------+-----------+-------------------+--------+-------------+------------+------------+
+| customer_id | first_name | last_name | email             | city   | state       | join_date  | is_premium |
++-------------+------------+-----------+-------------------+--------+-------------+------------+------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com | Mumbai | Maharashtra | 2024-01-15 |          1 |
+|         107 | Karan      | Mehta     | karan.m@email.com | Pune   | Maharashtra | 2024-07-22 |          1 |
++-------------+------------+-----------+-------------------+--------+-------------+------------+------------+
+2 rows in set (0.01 sec)
+
+Q10. Find all orders placed between '2024-08-10' and '2024-08-25' (inclusive) that are NOT cancelled.
+
+mysql> SELECT * FROM orders WHERE order_date BETWEEN '2024-08-10' AND '2024-08-25' AND status <> 'Cancelled';
++----------+-------------+------------+-----------+--------------+
+| order_id | customer_id | order_date | status    | total_amount |
++----------+-------------+------------+-----------+--------------+
+|     1004 |         101 | 2024-08-10 | Delivered |      3499.00 |
+|     1006 |         105 | 2024-08-15 | Delivered |      5898.00 |
+|     1007 |         106 | 2024-08-18 | Pending   |      1299.00 |
+|     1008 |         103 | 2024-08-20 | Delivered |       899.00 |
+|     1009 |         107 | 2024-08-25 | Shipped   |      6098.00 |
++----------+-------------+------------+-----------+--------------+
+5 rows in set (0.00 sec)
+
+Q11. Explain what the index idx_orders_date does. How would it improve the performance of a query that
+filters orders by order_date? Write a sample query that would benefit from this index.
+
+mysql> SELECT * FROM orders WHERE order_date BETWEEN '2024-08-01' AND '2024-08-31';
++----------+-------------+------------+-----------+--------------+
+| order_id | customer_id | order_date | status    | total_amount |
++----------+-------------+------------+-----------+--------------+
+|     1001 |         101 | 2024-08-01 | Delivered |      4498.00 |
+|     1002 |         102 | 2024-08-03 | Delivered |       799.00 |
+|     1003 |         103 | 2024-08-05 | Shipped   |      7498.00 |
+|     1004 |         101 | 2024-08-10 | Delivered |      3499.00 |
+|     1005 |         104 | 2024-08-12 | Cancelled |      2999.00 |
+|     1006 |         105 | 2024-08-15 | Delivered |      5898.00 |
+|     1007 |         106 | 2024-08-18 | Pending   |      1299.00 |
+|     1008 |         103 | 2024-08-20 | Delivered |       899.00 |
+|     1009 |         107 | 2024-08-25 | Shipped   |      6098.00 |
+|     1010 |         108 | 2024-08-28 | Delivered |      1598.00 |
++----------+-------------+------------+-----------+--------------+
+10 rows in set (0.00 sec)
+
+Q12. If you run: SELECT * FROM customers WHERE YEAR(join_date) = 2024; — would the index on join_date
+be used? Explain why or why not, and rewrite the query to be index-friendly (SARGable).
+
+mysql> -- Not index friendly
+mysql>
+mysql> SELECT * FROM customers WHERE YEAR(join_date)=2024;
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+| customer_id | first_name | last_name | email              | city      | state       | join_date  | is_premium |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |
+|         102 | Priya      | Patel     | priya.p@email.com  | Ahmedabad | Gujarat     | 2024-02-20 |          0 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |
+|         104 | Sneha      | Reddy     | sneha.r@email.com  | Hyderabad | Telangana   | 2024-04-05 |          0 |
+|         105 | Vikram     | Singh     | vikram.s@email.com | Jaipur    | Rajasthan   | 2024-05-12 |          1 |
+|         106 | Ananya     | Iyer      | ananya.i@email.com | Chennai   | Tamil Nadu  | 2024-06-18 |          0 |
+|         107 | Karan      | Mehta     | karan.m@email.com  | Pune      | Maharashtra | 2024-07-22 |          1 |
+|         108 | Divya      | Nair      | divya.n@email.com  | Kochi     | Kerala      | 2024-08-30 |          0 |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+8 rows in set (0.00 sec)
+
+mysql> -- Index-friendly version
+mysql>
+mysql> SELECT * FROM customers WHERE join_date >= '2024-01-01' AND join_date < '2025-01-01';
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+| customer_id | first_name | last_name | email              | city      | state       | join_date  | is_premium |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |
+|         102 | Priya      | Patel     | priya.p@email.com  | Ahmedabad | Gujarat     | 2024-02-20 |          0 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |
+|         104 | Sneha      | Reddy     | sneha.r@email.com  | Hyderabad | Telangana   | 2024-04-05 |          0 |
+|         105 | Vikram     | Singh     | vikram.s@email.com | Jaipur    | Rajasthan   | 2024-05-12 |          1 |
+|         106 | Ananya     | Iyer      | ananya.i@email.com | Chennai   | Tamil Nadu  | 2024-06-18 |          0 |
+|         107 | Karan      | Mehta     | karan.m@email.com  | Pune      | Maharashtra | 2024-07-22 |          1 |
+|         108 | Divya      | Nair      | divya.n@email.com  | Kochi     | Kerala      | 2024-08-30 |          0 |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+
+8 rows in set (0.00 sec)
+
+Section C — Aggregation (GROUP BY, SUM, COUNT, AVG, MIN, MAX) 
+These questions test your ability to summarize and aggregate data. 
+
+Q13. Count the total number of orders in the orders table.
+
+mysql> SELECT COUNT(*) AS total_orders FROM orders;
++--------------+
+| total_orders |
++--------------+
+|           10 |
++--------------+
+1 row in set (0.00 sec)
+
+Q14. Find the total revenue (SUM of total_amount) from all 'Delivered' orders.
+
+mysql> SELECT SUM(total_amount) AS total_revenue FROM orders WHERE status='Delivered';
++---------------+
+| total_revenue |
++---------------+
+|      17191.00 |
++---------------+
+1 row in set (0.00 sec)
+
+Q15. Calculate the average unit_price of products in each category.
+
+mysql> SELECT category, AVG(unit_price) AS avg_price FROM products GROUP BY category;
++-------------+-------------+
+| category    | avg_price   |
++-------------+-------------+
+| Clothing    | 2699.000000 |
+| Electronics | 2224.000000 |
+| Home        |  949.000000 |
++-------------+-------------+
+3 rows in set (0.00 sec)
+
+Q16. For each order status, find the count of orders and the total revenue. Sort the result by total revenue in
+descending order.
+
+mysql> SELECT status,COUNT(*) AS order_count,SUM(total_amount) AS total_revenue FROM orders GROUP BY status ORDER BY total_revenue DESC;
++-----------+-------------+---------------+
+| status    | order_count | total_revenue |
++-----------+-------------+---------------+
+| Delivered |           6 |      17191.00 |
+| Shipped   |           2 |      13596.00 |
+| Cancelled |           1 |       2999.00 |
+| Pending   |           1 |       1299.00 |
++-----------+-------------+---------------+
+4 rows in set (0.00 sec)
+
+Q17. Find the most expensive (MAX) and cheapest (MIN) product in each category.
+
+mysql> SELECT category,MAX(unit_price) AS max_price,MIN(unit_price) AS min_price FROM products GROUP BY category;
++-------------+-----------+-----------+
+| category    | max_price | min_price |
++-------------+-----------+-----------+
+| Clothing    |   4599.00 |    799.00 |
+| Electronics |   3499.00 |    899.00 |
+| Home        |   1299.00 |    599.00 |
++-------------+-----------+-----------+
+3 rows in set (0.00 sec)
+
+Q18. List all product categories where the average unit_price is greater than ₹2000. (Hint: Use HAVING
+clause)
+
+mysql> SELECT category,AVG(unit_price) AS avg_price FROM products GROUP BY category HAVING AVG(unit_price) > 2000;
++-------------+-------------+
+| category    | avg_price   |
++-------------+-------------+
+| Clothing    | 2699.000000 |
+| Electronics | 2224.000000 |
++-------------+-------------+
+2 rows in set (0.00 sec)
+
+Section D — Joins & Relationships 
+These questions test your ability to combine data from multiple tables using different types of JOINs.
+ 
+Q19. Write an INNER JOIN query to display each order along with the customer's first_name and last_name.
+Show: order_id, order_date, first_name, last_name, total_amount.
+
+mysql> SELECT o.order_id,o.order_date,c.first_name,c.last_name,o.total_amount FROM orders o INNER JOIN customers c ON o.customer_id =c.customer_id;
++----------+------------+------------+-----------+--------------+
+| order_id | order_date | first_name | last_name | total_amount |
++----------+------------+------------+-----------+--------------+
+|     1001 | 2024-08-01 | Aarav      | Sharma    |      4498.00 |
+|     1004 | 2024-08-10 | Aarav      | Sharma    |      3499.00 |
+|     1002 | 2024-08-03 | Priya      | Patel     |       799.00 |
+|     1003 | 2024-08-05 | Rohan      | Gupta     |      7498.00 |
+|     1008 | 2024-08-20 | Rohan      | Gupta     |       899.00 |
+|     1005 | 2024-08-12 | Sneha      | Reddy     |      2999.00 |
+|     1006 | 2024-08-15 | Vikram     | Singh     |      5898.00 |
+|     1007 | 2024-08-18 | Ananya     | Iyer      |      1299.00 |
+|     1009 | 2024-08-25 | Karan      | Mehta     |      6098.00 |
+|     1010 | 2024-08-28 | Divya      | Nair      |      1598.00 |
++----------+------------+------------+-----------+--------------+
+10 rows in set (0.00 sec)
+
+Q20. Using a LEFT JOIN, list ALL customers and their orders (if any). Customers with no orders should still
+appear with NULL values for order columns.
+
+mysql> SELECT c.customer_id,c.first_name,c.last_name,o.order_id,o.order_date FROM customers c LEFT JOIN orders o ON c.customer_id =o.customer_id;
++-------------+------------+-----------+----------+------------+
+| customer_id | first_name | last_name | order_id | order_date |
++-------------+------------+-----------+----------+------------+
+|         101 | Aarav      | Sharma    |     1001 | 2024-08-01 |
+|         101 | Aarav      | Sharma    |     1004 | 2024-08-10 |
+|         102 | Priya      | Patel     |     1002 | 2024-08-03 |
+|         103 | Rohan      | Gupta     |     1003 | 2024-08-05 |
+|         103 | Rohan      | Gupta     |     1008 | 2024-08-20 |
+|         104 | Sneha      | Reddy     |     1005 | 2024-08-12 |
+|         105 | Vikram     | Singh     |     1006 | 2024-08-15 |
+|         106 | Ananya     | Iyer      |     1007 | 2024-08-18 |
+|         107 | Karan      | Mehta     |     1009 | 2024-08-25 |
+|         108 | Divya      | Nair      |     1010 | 2024-08-28 |
++-------------+------------+-----------+----------+------------+
+10 rows in set (0.00 sec)
+
+Q21. Write a query using JOINs across three tables (orders → order_items → products) to show: order_id,
+product_name, quantity, unit_price, and discount_pct for each order item.
+
+mysql> SELECT o.order_id,p.product_name,oi.quantity,oi.unit_price,oi.discount_pct FROM orders o JOIN order_items oi ON o.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id;
++----------+----------------------+----------+------------+--------------+
+| order_id | product_name         | quantity | unit_price | discount_pct |
++----------+----------------------+----------+------------+--------------+
+|     1001 | Wireless Earbuds     |        2 |    1499.00 |         0.00 |
+|     1006 | Wireless Earbuds     |        1 |    1499.00 |        10.00 |
+|     1002 | Cotton T-Shirt       |        1 |     799.00 |         0.00 |
+|     1003 | Smart Watch          |        1 |    2999.00 |         0.00 |
+|     1005 | Smart Watch          |        1 |    2999.00 |         0.00 |
+|     1003 | Running Shoes        |        1 |    4599.00 |         5.00 |
+|     1006 | Running Shoes        |        1 |    4599.00 |         5.00 |
+|     1004 | Bluetooth Speaker    |        1 |    3499.00 |         0.00 |
+|     1009 | Bluetooth Speaker    |        1 |    3499.00 |         0.00 |
+|     1007 | Bedsheet Set         |        1 |    1299.00 |         0.00 |
+|     1010 | Bedsheet Set         |        1 |    1299.00 |         0.00 |
+|     1001 | Laptop Stand         |        1 |     899.00 |        10.00 |
+|     1008 | Laptop Stand         |        1 |     899.00 |         0.00 |
+|     1009 | Cushion Covers (Set) |        2 |     599.00 |        15.00 |
+|     1010 | Cushion Covers (Set) |        1 |     599.00 |         0.00 |
++----------+----------------------+----------+------------+--------------+
+15 rows in set (0.00 sec)
+
+Q22. Explain the difference between LEFT JOIN and RIGHT JOIN with an example from this schema. When
+would you use a FULL OUTER JOIN?
+
+mysql> -- Left join (Returns all rows from left table)
+mysql>
+mysql> SELECT * FROM customers c LEFT JOIN orders o ON c.customer_id=o.customer_id;
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+----------+-------------+------------+-----------+--------------+
+| customer_id | first_name | last_name | email              | city      | state       | join_date  | is_premium | order_id | customer_id | order_date | status    | total_amount |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+----------+-------------+------------+-----------+--------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |     1001 |         101 | 2024-08-01 | Delivered |      4498.00 |
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |     1004 |         101 | 2024-08-10 | Delivered |      3499.00 |
+|         102 | Priya      | Patel     | priya.p@email.com  | Ahmedabad | Gujarat     | 2024-02-20 |          0 |     1002 |         102 | 2024-08-03 | Delivered |       799.00 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |     1003 |         103 | 2024-08-05 | Shipped   |      7498.00 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |     1008 |         103 | 2024-08-20 | Delivered |       899.00 |
+|         104 | Sneha      | Reddy     | sneha.r@email.com  | Hyderabad | Telangana   | 2024-04-05 |          0 |     1005 |         104 | 2024-08-12 | Cancelled |      2999.00 |
+|         105 | Vikram     | Singh     | vikram.s@email.com | Jaipur    | Rajasthan   | 2024-05-12 |          1 |     1006 |         105 | 2024-08-15 | Delivered |      5898.00 |
+|         106 | Ananya     | Iyer      | ananya.i@email.com | Chennai   | Tamil Nadu  | 2024-06-18 |          0 |     1007 |         106 | 2024-08-18 | Pending   |      1299.00 |
+|         107 | Karan      | Mehta     | karan.m@email.com  | Pune      | Maharashtra | 2024-07-22 |          1 |     1009 |         107 | 2024-08-25 | Shipped   |      6098.00 |
+|         108 | Divya      | Nair      | divya.n@email.com  | Kochi     | Kerala      | 2024-08-30 |          0 |     1010 |         108 | 2024-08-28 | Delivered |      1598.00 |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+----------+-------------+------------+-----------+--------------+
+10 rows in set (0.00 sec)
+
+mysql> -- Right Join (Returns all rows from right table)
+mysql>
+mysql> SELECT * FROM customers c RIGHT JOIN orders o ON c.customer_id=o.customer_id;
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+----------+-------------+------------+-----------+--------------+
+| customer_id | first_name | last_name | email              | city      | state       | join_date  | is_premium | order_id | customer_id | order_date | status    | total_amount |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+----------+-------------+------------+-----------+--------------+
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |     1001 |         101 | 2024-08-01 | Delivered |      4498.00 |
+|         102 | Priya      | Patel     | priya.p@email.com  | Ahmedabad | Gujarat     | 2024-02-20 |          0 |     1002 |         102 | 2024-08-03 | Delivered |       799.00 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |     1003 |         103 | 2024-08-05 | Shipped   |      7498.00 |
+|         101 | Aarav      | Sharma    | aarav.s@email.com  | Mumbai    | Maharashtra | 2024-01-15 |          1 |     1004 |         101 | 2024-08-10 | Delivered |      3499.00 |
+|         104 | Sneha      | Reddy     | sneha.r@email.com  | Hyderabad | Telangana   | 2024-04-05 |          0 |     1005 |         104 | 2024-08-12 | Cancelled |      2999.00 |
+|         105 | Vikram     | Singh     | vikram.s@email.com | Jaipur    | Rajasthan   | 2024-05-12 |          1 |     1006 |         105 | 2024-08-15 | Delivered |      5898.00 |
+|         106 | Ananya     | Iyer      | ananya.i@email.com | Chennai   | Tamil Nadu  | 2024-06-18 |          0 |     1007 |         106 | 2024-08-18 | Pending   |      1299.00 |
+|         103 | Rohan      | Gupta     | rohan.g@email.com  | Delhi     | Delhi       | 2024-03-10 |          1 |     1008 |         103 | 2024-08-20 | Delivered |       899.00 |
+|         107 | Karan      | Mehta     | karan.m@email.com  | Pune      | Maharashtra | 2024-07-22 |          1 |     1009 |         107 | 2024-08-25 | Shipped   |      6098.00 |
+|         108 | Divya      | Nair      | divya.n@email.com  | Kochi     | Kerala      | 2024-08-30 |          0 |     1010 |         108 | 2024-08-28 | Delivered |      1598.00 |
++-------------+------------+-----------+--------------------+-----------+-------------+------------+------------+----------+-------------+------------+-----------+--------------+
+10 rows in set (0.00 sec)
+mysql> -- Returns all rows from both tables including unmatched rows. Used when complete data from both tables is required.
+
+Q23. Identify all Foreign Key relationships in the schema. Explain what would happen if you tried to insert an
+order with customer_id = 999 (which doesn't exist in customers).
+
+mysql> INSERT INTO orders VALUES(1011,999,'2024-09-01','Pending',1000);
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`shopease_db`.`orders`, CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`customer_id`))
+mysql>
+mysql> -- Foreign Key Constraint Error because customer_id 999 does not exist
+mysql>
+
+Section E — Advanced Concepts (CASE, ACID, Transactions) 
+These questions test your understanding of conditional logic, database reliability principles, and transaction 
+management.
+
+Q24. Write a query using CASE to classify products into price tiers:
+• 'Budget'    → unit_price < 1000
+• 'Mid-Range' → unit_price BETWEEN 1000 AND 3000
+• 'Premium'   → unit_price > 3000
+Display: product_name, unit_price, price_tier.
+
+mysql> SELECT product_name,unit_price, CASE WHEN unit_price < 1000 THEN 'Budget' WHEN unit_price BETWEEN 1000 AND 3000 THEN 'Mid-Range' ELSE 'Premium' END AS price_tier FROM products;
++----------------------+------------+------------+
+| product_name         | unit_price | price_tier |
++----------------------+------------+------------+
+| Wireless Earbuds     |    1499.00 | Mid-Range  |
+| Cotton T-Shirt       |     799.00 | Budget     |
+| Smart Watch          |    2999.00 | Mid-Range  |
+| Running Shoes        |    4599.00 | Premium    |
+| Bluetooth Speaker    |    3499.00 | Premium    |
+| Bedsheet Set         |    1299.00 | Mid-Range  |
+| Laptop Stand         |     899.00 | Budget     |
+| Cushion Covers (Set) |     599.00 | Budget     |
++----------------------+------------+------------+
+8 rows in set (0.00 sec)
+
+Q25. Using a CASE statement inside an aggregate function, count how many orders are 'Delivered' vs 'Not
+Delivered' (all other statuses). Display the result in a single row.
+
+mysql> SELECT SUM(CASE WHEN status='Delivered' THEN 1 ELSE 0 END) AS Delivered, SUM(CASE WHEN status<>'Delivered' THEN 1 ELSE 0 END) AS Not_Delivered FROM orders;
++-----------+---------------+
+| Delivered | Not_Delivered |
++-----------+---------------+
+|         6 |             4 |
++-----------+---------------+
+1 row in set (0.00 sec)
+
+Q26. Explain each letter of ACID:
+• A – Atomicity
+• C – Consistency
+• I – Isolation
+• D – Durability
+Give a real-world example (e.g., bank transfer) showing why each property is important.
+
+mysql> -- A)Atomicity
+
+mysql> -- Transaction executes completely or not at all.
+
+mysql> -- C)Consistency
+
+mysql> -- Database remains valid before and after transaction.
+
+mysql> -- I)Isolation
+
+mysql> -- Multiple transactions do not interfere with each other.
+
+mysql> -- D)Durability
+
+mysql> -- Committed data remains permanently stored.
+
+mysql> -- =>Example: Bank Transfer
+
+mysql> -- ->When ₹1000 is transferred from Account A to Account B:
+
+mysql> -- A)Atomicity ensures both debit and credit happen together.
+mysql> -- C)Consistency maintains correct balances.
+mysql> -- I)Isolation prevents interference from other transactions.
+mysql> -- D)Durability ensures changes remain saved after commit.
+
+ 
+Q27. Write a SQL transaction that does the following atomically:
+1. Insert a new order (order_id=1011, customer_id=102, today's date, 'Pending', 1598.00)
+2. Insert two order items for that order
+3. Update the stock_qty of the purchased products
+4. If any step fails, ROLLBACK the entire transaction. Otherwise, COMMIT.
+Write the complete BEGIN...COMMIT/ROLLBACK block.
+
+mysql> START TRANSACTION;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> INSERT INTO orders VALUES(1011,102,CURDATE(),'Pending',1598.00);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO order_items VALUES(5016,1011,206,1,1299.00,0);
+Query OK, 1 row affected (0.00 sec)
+
+mysql> INSERT INTO order_items VALUES(5017,1011,208,1,599.00,0);
+Query OK, 1 row affected (0.00 sec)
+
+mysql> UPDATE products SET stock_qty = stock_qty - 1 WHERE product_id = 206;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> UPDATE products SET stock_qty = stock_qty - 1 WHERE product_id = 208;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> COMMIT;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> -- If any Query Fails enter (ROLLBACK;)
